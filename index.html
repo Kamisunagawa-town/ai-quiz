@@ -41,9 +41,14 @@
             cursor: pointer;
             font-size: 16px;
             margin-top: 16px;
+            margin-right: 10px;
             transition: 0.2s;
+            text-decoration: none;
+            display: inline-block;
         }
         .btn:hover { background: var(--primary-dark); }
+        .btn-sub { background: #6c757d; }
+        .btn-sub:hover { background: #5a6268; }
         .lead {
             background: #e8f0fe;
             padding: 16px;
@@ -119,8 +124,10 @@
         <div class="lead">
             <p>このテストは、職員が<strong>QommonsAI</strong>を安全に利用するための理解度確認です。</p>
             <p>問題プールから<strong>ランダムで10問</strong>を出題します。<strong>全問正解</strong>で修了証が発行されます。1問でも間違えた場合は再挑戦となりますので、落ち着いて回答してください。</p>
+            <p style="margin-bottom:0;"><strong>📘 はじめての方は、まずガイドラインを読んでからテストに進みましょう。</strong></p>
         </div>
-        <button class="btn" onclick="startQuiz()">テストを開始する</button>
+        <a href="guide.html" class="btn">① ガイドラインを読む</a>
+        <button class="btn btn-sub" onclick="startQuiz()">② テストを開始する</button>
     </div>
 
     <!-- クイズ画面 -->
@@ -143,6 +150,7 @@
             <h1>もう一歩です</h1>
             <h2 id="score-fail"></h2>
             <p>QommonsAIの利用には全問正解が必要です。<br>ガイドラインを読み返して、ぜひ再挑戦してください。</p>
+            <a href="guide.html" class="btn btn-sub">ガイドラインを読み返す</a>
             <button class="btn" onclick="location.reload()">もう一度挑戦する</button>
         </div>
         <div id="success-block" class="hidden">
