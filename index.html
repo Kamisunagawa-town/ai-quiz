@@ -161,15 +161,18 @@
 
 </div>
 
+<!-- Googleフォーム送信用の隠しiframe（フォールバック送信先） -->
+<iframe name="hidden_form_iframe" style="display:none;"></iframe>
+
 <!-- 問題プールの読み込み -->
 <script src="quiz.js"></script>
 
 <script>
     // ============================================================
-    // 設定エリア：Googleフォーム連携（後述の手順でURLとentry番号を設定）
-    //  連携しない場合は USE_GOOGLE_FORM を false のままにしてください
+    // 設定エリア：Googleフォーム連携
+    //  連携しない場合は USE_GOOGLE_FORM を false にしてください
     // ============================================================
-    const USE_GOOGLE_FORM = true;  // 連携する場合は true に変更
+    const USE_GOOGLE_FORM = true;  // 連携する場合は true
     const FORM_URL   = "https://docs.google.com/forms/d/e/1FAIpQLSfGC2ilIm4YcDZT7ZzxSlwh01zMYlyn-JAF_MuMDXc1XWupWw/formResponse";
     const ENTRY_NAME  = "entry.258530877"; // 氏名のentry番号
     const ENTRY_DATE  = "entry.1796079975"; // 合格日のentry番号
@@ -267,10 +270,13 @@
         const name = document.getElementById("user-name").value.trim();
         if (!name) { alert("氏名を入力してください。"); return; }
         const now = new Date();
-        generateCertificate(name, now);
+
+        // ① 先に合格記録を送信（処理詰まり対策のため修了証発行より前に実行）
         if (USE_GOOGLE_FORM) {
             sendToGoogleForm(name, toWareki(now), `${score}/${questions.length}`);
         }
+        // ② 修了証を発行
+        generateCertificate(name, now);
     }
 
     function generateCertificate(name, now) {
@@ -317,18 +323,64 @@
         dl.classList.remove("hidden");
     }
 
+    // ============================================================
+    // Googleフォーム送信
+    //  方式A：fetch（no-cors）
+    //  方式B：動的フォーム + 隠しiframe（fetchが届かない環境のフォールバック）
+    //  両方を実行することで送信成功率を高めています
+    // ============================================================
     function sendToGoogleForm(name, dateStr, scoreStr) {
-        const data = new FormData();
-        data.append(ENTRY_NAME, name);
-        data.append(ENTRY_DATE, dateStr);
-        data.append(ENTRY_SCORE, scoreStr);
-        fetch(FORM_URL, { method: "POST", mode: "no-cors", body: data })
-            .then(() => {
-                document.getElementById("send-status").classList.remove("hidden");
-            })
-            .catch(() => {
-                console.log("送信に失敗しました");
+        // デバッグ：送信内容をコンソールに出力
+        console.log("[送信内容]", {
+            [ENTRY_NAME]: name,
+            [ENTRY_DATE]: dateStr,
+            [ENTRY_SCORE]: scoreStr
+        });
+
+        // --- 方式A：fetch ---
+        try {
+            const data = new FormData();
+            data.append(ENTRY_NAME, name);
+            data.append(ENTRY_DATE, dateStr);
+            data.append(ENTRY_SCORE, scoreStr);
+            fetch(FORM_URL, { method: "POST", mode: "no-cors", body: data })
+                .then(() => console.log("[送信A] fetch完了（no-corsのため成否は不明）"))
+                .catch((err) => console.error("[送信A] fetchエラー:", err));
+        } catch (e) {
+            console.error("[送信A] 例外:", e);
+        }
+
+        // --- 方式B：動的フォーム送信（隠しiframe宛て） ---
+        try {
+            const form = document.createElement("form");
+            form.action = FORM_URL;
+            form.method = "POST";
+            form.target = "hidden_form_iframe";  // 画面遷移させない
+
+            const fields = [
+                [ENTRY_NAME, name],
+                [ENTRY_DATE, dateStr],
+                [ENTRY_SCORE, scoreStr]
+            ];
+            fields.forEach(([key, val]) => {
+                const input = document.createElement("input");
+                input.type = "hidden";
+                input.name = key;
+                input.value = val;
+                form.appendChild(input);
             });
+
+            document.body.appendChild(form);
+            form.submit();
+            console.log("[送信B] フォーム送信を実行しました");
+            // 後片付け
+            setTimeout(() => { document.body.removeChild(form); }, 1000);
+        } catch (e) {
+            console.error("[送信B] 例外:", e);
+        }
+
+        // 送信ステータス表示
+        document.getElementById("send-status").classList.remove("hidden");
     }
 </script>
 </body>
