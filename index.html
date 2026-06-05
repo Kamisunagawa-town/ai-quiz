@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>上砂川町 生成AI利用ガイドライン 確認テスト</title>
+    <style>
+        :root {
+            --primary: #0056b3;
+            --primary-dark: #004494;
+            --bg: #f0f4f8;
+            --correct: #28a745;
+            --incorrect: #dc3545;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background: var(--bg);
+            color: #333;
+            line-height: 1.7;
+            margin: 0;
+            padding: 16px;
+        }
+        .container {
+            max-width: 760px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        }
+        h1 { color: var(--primary); font-size: 1.5em; }
+        h2 { color: var(--primary); }
+        .hidden { display: none; }
+        .btn {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 16px;
+            transition: 0.2s;
+        }
+        .btn:hover { background: var(--primary-dark); }
+        .btn:disabled { background: #aaa; cursor: not-allowed; }
+        .lead {
+            background: #e8f0fe;
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 5px solid var(--primary);
+        }
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .progress-text { font-weight: bold; color: #6c757d; font-size: 0.9em; margin-bottom: 16px; }
+        .option-btn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 16px;
+            margin: 10px 0;
+            background: #f1f3f5;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: 0.2s;
+        }
+        .option-btn:hover:not(:disabled) { background: #e2e6ea; }
+        .option-btn:disabled { cursor: default; }
+        .option-btn.correct { background: #d4edda; border-color: var(--correct); color: #155724; font-weight: bold; }
+        .option-btn.incorrect { background: #f8d7da; border-color: var(--incorrect); color: #721c24; }
+        #explanation {
+            background: #fff8e1;
+            padding: 16px;
+            border-left: 5px solid #ffc107;
+            margin-top: 20px;
+            border-radius: 4px;
+        }
+        #explanation h3 { margin-top: 0; }
+        input[type="text"] {
+            padding: 12px;
+            font-size: 16px;
+            width: 100%;
+            max-width: 320px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            margin-top: 8px;
+        }
+        #cert-canvas {
+            max-width: 100%;
+            border: 1px solid #ddd;
+            margin-top: 20px;
+            border-radius: 4px;
+        }
+        .center { text-align: center; }
+        .badge { font-size: 3em; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- スタート画面 -->
+    <div id="start-screen">
+        <h1>上砂川町 生成AI利用ガイドライン<br>確認テスト</h1>
+        <div class="lead">
+            <p>このテストは、職員が<strong>QommonsAI</strong>を安全に利用するための理解度確認です。</p>
+            <p>全10問・<strong>全問正解</strong>で修了証が発行されます。1問でも間違えた場合は再挑戦となりますので、落ち着いて回答してください。</p>
+        </div>
+        <button class="btn" onclick="startQuiz()">テストを開始する</button>
+    </div>
+
+    <!-- クイズ画面 -->
+    <div id="quiz-screen" class="hidden">
+        <div class="progress-bar"><div class="progress-fill" id="bar"></div></div>
+        <div class="progress-text" id="progress">問題 1 / 10</div>
+        <h2 id="q-text"></h2>
+        <div id="options"></div>
+        <div id="explanation" class="hidden">
+            <h3 id="result-title"></h3>
+            <p id="exp-text"></p>
+            <button class="btn" id="next-btn" onclick="nextQuestion()">次の問題へ</button>
+        </div>
+    </div>
+
+    <!-- 結果画面 -->
+    <div id="result-screen" class="hidden center">
+        <div id="fail-block" class="hidden">
+            <div class="badge">😢</div>
+            <h1>もう一歩です</h1>
+            <h2 id="score-fail"></h2>
+            <p>QommonsAIの利用には全問正解が必要です。<br>ガイドラインを読み返して、ぜひ再挑戦してください。</p>
+            <button class="btn" onclick="location.reload()">もう一度挑戦する</button>
+        </div>
+        <div id="success-block" class="hidden">
+            <div class="badge">🎉</div>
+            <h1>全問正解おめでとうございます！</h1>
+            <p>ガイドラインの内容を正しく理解されています。<br>氏名を入力して修了証を発行してください。</p>
+            <input type="text" id="user-name" placeholder="氏名（例：上砂川 太郎）"><br>
+            <button class="btn" onclick="generateCertificate()">修了証を発行する</button>
+            <br>
+            <canvas id="cert-canvas" class="hidden"></canvas>
+            <br>
+            <a id="dl-link" class="hidden"><button class="btn">画像をダウンロードして保存</button></a>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // ===== 問題データ（全10問・上砂川町ガイドライン準拠）=====
+    const questions = [
+        {
+            q: "上砂川町のガイドラインにおいて、生成AIを活用する目的として最も適切なものはどれですか？",
+            options: [
+                "業務効率化と行政サービスの向上を図るため",
+                "すべての行政判断をAIに任せて自動化するため",
+                "職員数を大幅に削減するため",
+                "最新技術を導入すること自体を目的とするため"
+            ],
+            ans: 0,
+            exp: "生成AIは技術ありきではなく、町民生活の向上と行政サービスの質的改善を実現する『手段』として位置づけられています。"
+        },
+        {
+            q: "生成AIが出力した内容について、業務上の決定と説明責任を負うのは誰ですか？",
+            options: [
+                "生成AIの開発メーカー",
+                "総務課デジタル推進担当係",
+                "業務でAIを利用した職員本人",
+                "プロンプトを最初に考えた人"
+            ],
+            ans: 2,
+            exp: "AIは判断を委ねる対象ではなく道具です。職員が事実関係・根拠・妥当性を確認したうえで採用を判断し、説明責任を担います。"
+        },
+        {
+            q: "ガイドライン策定時点で、職員が業務で原則利用できる生成AIサービスはどれですか？",
+            options: [
+                "ChatGPT（無料版）",
+                "QommonsAI",
+                "あらゆるオープンソースの生成AI",
+                "Bing Chat（Copilot）"
+            ],
+            ans: 1,
+            exp: "入力情報が学習データとして利用されないよう構成されている、Polimill株式会社提供の『QommonsAI』が対象です。"
+        },
+        {
+            q: "情報の機密性分類が「機密性3A」に該当する文書の取扱いとして正しいものはどれですか？",
+            options: [
+                "匿名化すれば入力してよい",
+                "課長の承認を得れば入力してよい",
+                "記号に置き換えれば入力してよい",
+                "原則として入力禁止である"
+            ],
+            ans: 3,
+            exp: "秘密文書に相当する機密性3A・3B・3Cは、非特定化措置を施しても漏えい時の影響が甚大なため、原則入力禁止です。"
+        },
+        {
+            q: "予算額などを「予算[金額A]」のように一時的な記号に置き換える非特定化措置を何と呼びますか？",
+            options: [
+                "匿名化",
+                "暗号化",
+                "置換対応",
+                "マスキング"
+            ],
+            ans: 2,
+            exp: "文書内で繰り返し出現する特定の機密情報を一時的な記号に置き換える手法を『置換対応』といいます。"
+        },
+        {
+            q: "生成AIが、もっともらしく見えても事実と異なる内容を出力してしまう現象を何と呼びますか？",
+            options: [
+                "マルウェア",
+                "ハルシネーション",
+                "フィッシング",
+                "バイアス"
+            ],
+            ans: 1,
+            exp: "AIが確率に基づいて文章を組み立てる仕組み上、事実と異なる内容（ハルシネーション）が含まれることがあります。"
+        },
+        {
+            q: "AIで作成した広報用イラスト等を、町の著作物として保護されやすくするための工夫はどれですか？",
+            options: [
+                "プロンプトを著作権登録する",
+                "利用規約を全文公開する",
+                "職員が十分な創作的アレンジを加える",
+                "AIの生成物をそのまま使う"
+            ],
+            ans: 2,
+            exp: "生成物をたたき台とし、職員が十分な創作的アレンジを加えることで、著作物としての保護を得られるよう工夫します。"
+        },
+        {
+            q: "上砂川町のような小規模自治体で非特定化措置を行う際、特に注意すべき点はどれですか？",
+            options: [
+                "難読地名をAIが理解できないこと",
+                "複数の断片情報の組み合わせから個人が特定されやすいこと",
+                "町外職員に重要性が伝わりにくいこと",
+                "標準語以外でエラーが出やすいこと"
+            ],
+            ans: 1,
+            exp: "人口規模が小さいため、限定的な情報の組み合わせからでも個人が容易に特定される可能性があり、通常以上に慎重な配慮が必要です。"
+        },
+        {
+            q: "生成AIの出力に差別的な表現等が含まれていないか点検すべき理由として正しいものはどれですか？",
+            options: [
+                "点検でAIの処理速度が上がるため",
+                "プロンプトが自動修正されるため",
+                "AIは学習データの偏り（バイアス）を反映・増幅させることがあるため",
+                "AIは常に最新の法律を把握しているため"
+            ],
+            ans: 2,
+            exp: "学習データに由来する社会的・歴史的な偏りが反映・増幅され、行政の公平性を損なうおそれがあるためです。"
+        },
+        {
+            q: "生成AIの利用で個人情報の漏えい等のインシデントが発生した場合、職員がとるべき行動はどれですか？",
+            options: [
+                "次回の見直し時期まで待って報告する",
+                "公にならないようデータを削除して沈黙する",
+                "上砂川町情報セキュリティポリシーに基づき直ちに必要な措置を講じる",
+                "AIに解決策を質問して対処する"
+            ],
+            ans: 2,
+            exp: "問題発生時は情報セキュリティポリシーに則り、直ちに報告・対応することが義務付けられています。"
+        }
+    ];
+
+    let current = 0, score = 0, answered = false, failed = false;
+
+    function startQuiz() {
+        document.getElementById("start-screen").classList.add("hidden");
+        document.getElementById("quiz-screen").classList.remove("hidden");
+        showQuestion();
+    }
+
+    function showQuestion() {
+        answered = false;
+        document.getElementById("explanation").classList.add("hidden");
+        const total = questions.length;
+        document.getElementById("progress").innerText = `問題 ${current + 1} / ${total}`;
+        document.getElementById("bar").style.width = ((current) / total * 100) + "%";
+        document.getElementById("q-text").innerText = questions[current].q;
+        const optDiv = document.getElementById("options");
+        optDiv.innerHTML = "";
+        questions[current].options.forEach((opt, i) => {
+            const btn = document.createElement("button");
+            btn.className = "option-btn";
+            btn.innerText = opt;
+            btn.onclick = () => checkAnswer(i);
+            optDiv.appendChild(btn);
+        });
+    }
+
+    function checkAnswer(selected) {
+        if (answered) return;
+        answered = true;
+        const correct = questions[current].ans;
+        const btns = document.getElementById("options").children;
+        for (let b of btns) b.disabled = true;
+        if (selected === correct) {
+            btns[selected].classList.add("correct");
+            document.getElementById("result-title").innerText = "⭕ 正解！";
+            document.getElementById("result-title").style.color = "var(--correct)";
+            score++;
+        } else {
+            btns[selected].classList.add("incorrect");
+            btns[correct].classList.add("correct");
+            document.getElementById("result-title").innerText = "❌ 不正解";
+            document.getElementById("result-title").style.color = "var(--incorrect)";
+            failed = true;
+        }
+        document.getElementById("exp-text").innerText = questions[current].exp;
+        document.getElementById("explanation").classList.remove("hidden");
+        document.getElementById("next-btn").innerText =
+            (current === questions.length - 1) ? "結果を見る" : "次の問題へ";
+    }
+
+    function nextQuestion() {
+        current++;
+        if (current < questions.length) {
+            showQuestion();
+        } else {
+            showResult();
+        }
+    }
+
+    function showResult() {
+        document.getElementById("quiz-screen").classList.add("hidden");
+        document.getElementById("result-screen").classList.remove("hidden");
+        if (!failed && score === questions.length) {
+            document.getElementById("success-block").classList.remove("hidden");
+        } else {
+            document.getElementById("fail-block").classList.remove("hidden");
+            document.getElementById("score-fail").innerText = `10問中 ${score}問 正解`;
+        }
+    }
+
+    function toWareki(d) {
+        // 2019/5/1以降は令和
+        const y = d.getFullYear();
+        const reiwa = y - 2018;
+        const r = (reiwa === 1) ? "元" : reiwa;
+        return `令和${r}年${d.getMonth() + 1}月${d.getDate()}日`;
+    }
+
+    function generateCertificate() {
+        const name = document.getElementById("user-name").value.trim();
+        if (!name) { alert("氏名を入力してください。"); return; }
+
+        const canvas = document.getElementById("cert-canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = 900;
+        canvas.height = 640;
+
+        // 背景
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, 900, 640);
+        // 外枠
+        ctx.strokeStyle = "#0056b3";
+        ctx.lineWidth = 16;
+        ctx.strokeRect(24, 24, 852, 592);
+        ctx.strokeStyle = "#cdddf5";
+        ctx.lineWidth = 4;
+        ctx.strokeRect(40, 40, 820, 560);
+
+        ctx.fillStyle = "#222";
+        ctx.textAlign = "center";
+
+        ctx.font = "bold 46px sans-serif";
+        ctx.fillText("修 了 証", 450, 130);
+
+        ctx.font = "30px sans-serif";
+        ctx.fillText(`${name}　殿`, 450, 230);
+
+        ctx.font = "20px sans-serif";
+        ctx.fillText("あなたは上砂川町生成AI利用ガイドラインに関する確認テストにおいて", 450, 310);
+        ctx.fillText("全問正解し、ガイドラインの内容を正しく理解したことを証します。", 450, 350);
+        ctx.fillText("これにより、QommonsAIの業務利用を許可します。", 450, 390);
+
+        const now = new Date();
+        ctx.font = "20px sans-serif";
+        ctx.fillText(toWareki(now), 450, 470);
+
+        ctx.font = "bold 24px sans-serif";
+        ctx.fillText("上砂川町 総務課デジタル推進担当係", 450, 520);
+
+        // 管理用の通し番号（受験日時ベース）
+        const serial = `No. ${now.getFullYear()}${("0"+(now.getMonth()+1)).slice(-2)}${("0"+now.getDate()).slice(-2)}-${("0"+now.getHours()).slice(-2)}${("0"+now.getMinutes()).slice(-2)}${("0"+now.getSeconds()).slice(-2)}`;
+        ctx.font = "14px sans-serif";
+        ctx.fillStyle = "#888";
+        ctx.textAlign = "right";
+        ctx.fillText(serial, 840, 580);
+
+        canvas.classList.remove("hidden");
+        const dl = document.getElementById("dl-link");
+        dl.href = canvas.toDataURL("image/png");
+        dl.download = `生成AI研修修了証_${name}.png`;
+        dl.classList.remove("hidden");
+    }
+</script>
+</body>
+</html>
